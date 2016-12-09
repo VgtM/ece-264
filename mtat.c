@@ -21,6 +21,8 @@ int _index(BMPImage* bmp, int x, int y);
 void _binarize(BWimage* bwimage, int x, int y);
 int _intensity(BMPImage* bmp, int x, int y);
 char* _strdup(const char* src);
+int _max(int x, int y);
+int _min(int x, int y);
 
 bool _check(BMPHeader* header){
 	if(header->type != 0x4d42){
@@ -65,13 +67,16 @@ BMPImage* binarize(BMPImage* image, int radius, int num_threads, char** error){
 	}
 	int height = image->header.height_px;
 	int width = image->header.width_px;
-	//BMPImage* bmp = malloc(sizeof(*bmp));
-	//bmp->header = image->header;
-	//bmp->data = malloc(sizeof(bmp->data[0])*height*width);
+	BMPImage* bmp = malloc(sizeof(*bmp));
+	bmp->header = image->header;
+	bmp->data = malloc(sizeof(char)*image->header.image_size_bytes);
+	for(int i = 0; i < image->header.image_size_bytes; i++){
+		bmp->data[i] = image->data[i];
+	}
 	//bmp = crop_bmp(image, 0, 0, width, height, error);
 	BWimage* bwimage = malloc(sizeof(*bwimage)*num_threads);
 	pthread_t* thread = malloc(sizeof(*thread)*num_threads);
-	BMPImage* bmp = crop_bmp(image, 0, 0, width, height, error);
+	//BMPImage* bmp = crop_bmp(image, 0, 0, width, height, error);
 	int num_pixel = (image->header.width_px)*(image->header.height_px);
 	if(num_pixel/num_threads < 1){
 		num_threads = num_pixel;
@@ -133,13 +138,13 @@ void _binarize(BWimage* bwimage, int x, int y){
 	int right = radius;
 	int sum = 0;
 	if(x - radius <= 0){
-		left = x;
+		left = 0;
 	}
 	if(x + radius >= width){
 		right = width - x;
 	}
 	if(y - radius <= 0){
-		up = y;
+		up = 0;
 	}
 	if(y + radius >= height){
 		down = height - y;
@@ -147,21 +152,18 @@ void _binarize(BWimage* bwimage, int x, int y){
 	int i = 0;
 	int index = _index(bwimage->image, x, y);
 	int target = _intensity(bwimage->image, x, y);
-	int ymin = y - up;
 	int ymax = y + down;
-	assert(ymin >= 0 && ymax <= height);
-	while(ymin < ymax){
+	int xmax = x + right;
+	for(int y1 = _max(y - radius, 0); y1 <= _min(y+radius, height); y1++){
+		assert(y1 >= 0 && ymax <= height);
 		//if(ymin >= 0 && ymax <= height){
-			int xmax = x + right;
-			int xmin = x - left;
-			assert(xmin >= 0 && xmax <= width);
-			while(xmin < xmax){
+		for(int x1 = _max(x - radius,0); x1 <= _min(x+radius,width); x1++){
+			assert(x1 >= 0 && xmax <= width);
 				//if(xmin >= 0 && xmax < width){
-					int sum1  = _intensity(bwimage->image, xmin, ymin);
-					sum += sum1;
-					i++;
-					xmin++;
-				}
+			int sum1  = _intensity(bwimage->image, x1, y1);
+			sum += sum1;
+			i++;
+		}
 				//else if(xmin < 0){
 				//	xmin++;
 				//}
@@ -176,16 +178,15 @@ void _binarize(BWimage* bwimage, int x, int y){
 		//else{
 		//	ymax--;
 		//}
-		ymin++;
 	}
-	if(target <= sum/i){
-		for(i = 0; i < pixel; i++){
-			bwimage->bmp->data[index + i] = 0;
+	if(target*i <= sum){
+		for(int i1 = 0; i1 < pixel; i1++){
+			bwimage->bmp->data[index + i1] = 0;
 		}
 	}
 	else{
-		for(i = 0; i < pixel; i++){
-			bwimage->bmp->data[index + i] = 255;
+		for(int i2 = 0; i2 < pixel; i2++){
+			bwimage->bmp->data[index + i2] = 255;
 		}
 	}
 }
@@ -202,8 +203,12 @@ int _intensity(BMPImage* bmp, int x, int y){
 
 int _index(BMPImage* image, int x, int y){
 	int row = (image->header.image_size_bytes)/(image->header.height_px);
+	//int padding = ((image->header.width_px + 3)/4)*4 - image->header.width_px;
+	//int padding = (4 - (image->header.width_px * 3 )%4) + (image->header.width_px * 3);
+	//int row = (image->header.width_px*3 + padding)*(image->header.height_px);
 	int pixel = (image->header.bits_per_pixel)/8;
 	int index = pixel*x + (image->header.height_px - y - 1)*row;
+	//int index = pixel*x + (y*row);
 	return index;
 }
 
@@ -211,6 +216,18 @@ char* _strdup(const char* src){
 	return strcpy(malloc((strlen(src) + 1)*sizeof(*src)), src);
 }
 
+int _max(int x, int y){
+	if(x > y){
+		return x;
+	}
+	return y;
+}
 
+int _min(int x, int y){
+	if(x > y){
+		return y;
+	}
+	return x;
+}
 	
 

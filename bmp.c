@@ -183,6 +183,8 @@ BMPImage* crop_bmp(BMPImage* image, int x, int y, int w, int h, char** error){
 		height = image->header.height_px;
 		bppixel = image->header.bits_per_pixel;
 		int linebyte = (width*bppixel/8 + 3)/4*4;
+		bmp->header.image_size_bytes = h*linebyte;
+		bmp->header.size = 54 + bmp->header.image_size_bytes;
 		int crop_linebyte = (w*bppixel/8 + 3)/4*4;
 		int crop_padding = crop_linebyte - w*bppixel/8;
 		int startpoint = x*bppixel/8 + linebyte*(height - h - y);
