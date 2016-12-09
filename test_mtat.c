@@ -34,8 +34,13 @@ int main(int argc, const char *argv[])
 	FILE* fp = fopen("img1_6x6_color.bmp", "r");
 	BMPImage* tmp = read_bmp(fp, &error);
 	FILE* fp1 = fopen("img1_6x6_bw_r_02.bmp", "w");
-	BMPImage* bin = binarize(tmp, 2, 3, &error);
+	BMPImage* bin = binarize(tmp, 2, 1, &error);
 	write_bmp(fp1, bin, &error);
+	/*FILE* fp2 = fopen("img1_6x6_color.bmp", "r");
+	tmp = read_bmp(fp, &error);
+	FILE* fp3 = fopen("img1_6x6_bwcrop.bmp", "w");
+	BMPImage* crop = crop_bmp(tmp, 0, 0, tmp->header.width_px, tmp->header.height_px, &error);
+	write_bmp(fp3,crop, &error);*/
 
 	fclose(fp);
 	fclose(fp1);
